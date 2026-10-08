@@ -129,7 +129,7 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        max-height: 200px;
+        max-height: 400px;
         overflow-y: auto;
       }
       #rassvet-group-list label span {
@@ -143,6 +143,19 @@
         height: 10px;
         border-radius: 50%;
         display: inline-block;
+      }
+      .sat-label-tooltip {
+        background: rgba(5,7,10,0.9) !important;
+        border: 1px solid var(--accent) !important;
+        color: var(--text) !important;
+        border-radius: 4px !important;
+        padding: 1px 4px !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+      }
+      .sat-label-tooltip:before {
+        display: none !important;
       }
     </style>
   </head>
@@ -179,12 +192,12 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script type="module">
-      window.satellite = await import('./js/satellite.mjs?v=2');
+      window.satellite = await import('./js/satellite.mjs?v=11');
     </script>
 
-    <script type="module" src="js/config.js?v=2"></script>
-    <script type="module" src="js/utils.js?v=2"></script>
-    <script type="module" src="js/main.js?v=2"></script>
+    <script type="module" src="js/config.js?v=11"></script>
+    <script type="module" src="js/utils.js?v=11"></script>
+    <script type="module" src="js/main.js?v=11"></script>
 
     <script type="module">
       const banner = document.getElementById('rassvet-error');

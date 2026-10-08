@@ -192,28 +192,57 @@ async function main() {
     });
   }
 
-  // Non-destructive catalog merge: load existing catalog.json if present and
-  // append only new noradIds (skips duplicates) rather than overwriting.
+  // Reference-only catalog: groups point to source txt files, no embedded sats
   const existing = fs.existsSync('data/catalog.json')
     ? JSON.parse(fs.readFileSync('data/catalog.json', 'utf8')) : null;
-  const existingIds = new Set((existing?.satellites || []).map(s => s.noradId));
-  const merged = existing ? existing.satellites.filter(s => existingIds.has(s.noradId)) : [];
-  const newSats = satellites.filter(s => !existingIds.has(s.noradId));
-  merged.push(...newSats);
+  const groupStats = {};
+  for (const { rec, res } of results) {
+    if (!res.ok) continue;
+    const g = rec.group;
+    if (!groupStats[g]) groupStats[g] = { count: 0, coverages: new Set() };
+    groupStats[g].count += 1;
+    groupStats[g].coverages.add(coverageFor(res.cart.height));
+  }
+
+  // Also include groups from existing source files even if no passes this run
+  const sourceFiles = fs.readdirSync(TLES_DIR)
+    .filter(n => n.endsWith('.txt'))
+    .filter(n => !/^all\.txt$|^starlink\.txt$|^testsats\.txt$/.test(n))
+    .sort();
+  for (const f of sourceFiles) {
+    const g = f.replace(/\.txt$/, '');
+    if (!groupStats[g]) groupStats[g] = { count: 0, coverages: new Set() };
+    // Try to infer coverage from existing catalog if present
+    if (existing?.groups) {
+      if (typeof existing.groups === 'object' && !Array.isArray(existing.groups)) {
+        const info = existing.groups[g] || existing.groups[g.replace(/_/g,'-')] || existing.groups[g.replace(/-/g,'_')];
+        if (info && info.coverage) groupStats[g].coverages.add(info.coverage);
+      } else if (Array.isArray(existing.groups)) {
+        const info = existing.groups.find(x => x.group === g || x.group === g.replace(/_/g,'-'));
+        if (info && info.coverage) groupStats[g].coverages.add(info.coverage);
+      }
+    }
+  }
+
+  const groups = {};
+  for (const [g, stats] of Object.entries(groupStats)) {
+    groups[g] = {
+      name: g,
+      count: stats.count,
+      coverage: [...stats.coverages].join(',') || 'LEO',
+      files: [`data/tles/${g}.txt`],
+      sourceFile: g + '.txt',
+    };
+  }
 
   const catalog = {
     generatedAt: now.toISOString(),
-    mergedFrom: existing ? existing.generatedAt : null,
-    satelliteCount: merged.length,
-    newThisRun: newSats.length,
-    groups: [...new Set(merged.map(s => s.group))].map(g => ({
-      group: g, count: merged.filter(s => s.group === g).length,
-      coverage: [...new Set(merged.filter(s => s.group === g).map(s => s.coverage))].join(','),
-    })),
-    satellites: merged,
+    mergedFrom: existing ? (existing.generatedAt || null) : null,
+    groupCount: Object.keys(groups).length,
+    groups,
   };
   fs.writeFileSync('data/catalog.json', JSON.stringify(catalog, null, 2));
-  console.log(`\nWrote data/catalog.json (${merged.length} total, +${newSats.length} new this run)`);
+  console.log(`\nWrote data/catalog.json (${Object.keys(groups).length} groups, reference-only)`);
 
   process.exit(failed.length ? 1 : 0);
 }

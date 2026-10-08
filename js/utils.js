@@ -6,23 +6,23 @@
 //   no GMST rotation is needed for rendering to a flat map.
 //   For pass prediction you may need eciToEcf() / ecfToEci() to rotate between
 //   ECI and ECF using the GMST.
-
-// window.satellite is loaded via index.html; resolve at runtime.
-import { radiansToDegrees } from './satellite.mjs';
+//
+import * as satelliteJS from './satellite.mjs';
+const satellite = satelliteJS;
 
 /** JulianDate <-> Date conversions (kept for reference; unused by the Leaflet view). */
 export function dateToJulianDate(date) {
-  return Cesium.JulianDate.fromDate(date);
+  throw new Error('dateToJulianDate requires Cesium; unused by the Leaflet view');
 }
 
 export function julianDateToDate(jd) {
-  return Cesium.JulianDate.toDate(jd);
+  throw new Error('julianDateToDate requires Cesium; unused by the Leaflet view');
 }
 
 /** ECF position {x,y,z} in km (satellite.js) -> Cesium Cartesian3 (still km).
  * Note: Cesium expects METERS, so multiply by 1000 before passing to Cesium. */
 export function cartesianFromEcf(ecf) {
-  return new Cesium.Cartesian3(ecf.x, ecf.y, ecf.z);
+  throw new Error('cartesianFromEcf requires Cesium; unused by the Leaflet view');
 }
 
 /**
@@ -52,14 +52,18 @@ export function ecfToEci(ecf, date) {
  * Degenerate / unparseable entries are skipped with console.warn.
  * @returns {{ groupName: string, sats: Array<{name: string, satrec: object}> }}
  */
-export function parseTLESGroup(text) {
-  const groupName = text.match(/^@ GROUP=(\S+)/m)?.[1] || 'Unsorted';
+export function parseTLESGroup(text, groupHint) {
+  const match = text.match(/^@ GROUP=(.+)$/m);
+  const groupName = match ? match[1].trim() : (groupHint || 'Unsorted');
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
   const sats = [];
   let name = null;
   let pending = [];
 
   for (const line of lines) {
+    if (/^@ GROUP=/.test(line)) {
+      continue;
+    }
     if (/^\d/.test(line)) {
       pending.push(line);
       if (pending.length === 2) {
@@ -122,7 +126,8 @@ export function predictPass(satrec, latDeg, lonDeg, fromDate, durationSeconds, m
   for (let t = 0; t <= durationSeconds; t += step) {
     const simDate = new Date(fromDate.getTime() + t * 1000);
     const res = satellite.propagate(satrec, simDate);
-    const look = satellite.ecfToLookAngles(obsEcf, res.position, obs.longitude, obs.latitude, obs.height, 0);
+    const resEcf = satellite.eciToEcf(res.position, satellite.gstime(simDate));
+    const look = satellite.ecfToLookAngles(obsEcf, resEcf, obs.longitude, obs.latitude, obs.height, 0);
     if (look.elevation > minElev && !open) {
       open = true;
       maxElev = look.elevation;
@@ -146,18 +151,21 @@ export function predictPass(satrec, latDeg, lonDeg, fromDate, durationSeconds, m
 }
 
 /**
- * Load a TLE file: browser uses fetch; Node runtime falls back to fs.readFileSync.
+ * Load a TLE file: browser uses fetch; Node runtime reads from the filesystem.
  */
 export async function loadTLEFile(path) {
-  try {
-    const r = await fetch(path);
-    if (!r.ok) throw new Error('loadTLEFile: ' + r.status + ' ' + path);
-    return r.text();
-  } catch (e) {
-    // fetch failed (no server / Node relative URL) -> fall back to fs.readFileSync
+  if (typeof fetch === 'undefined') {
+    // Node runtime: read from the filesystem.
     const fs = await import('fs');
     return fs.readFileSync(path, 'utf8');
   }
+  // Browser: fetch over HTTP.
+  const r = await fetch(path);
+  if (!r.ok) {
+    console.warn('RASSVET loadTLEFile: ' + r.status + ' ' + r.statusText + ' -> ' + path);
+    throw new Error('loadTLEFile: ' + r.status + ' ' + r.statusText + ' ' + path);
+  }
+  return r.text();
 }
 
 /**
@@ -172,7 +180,7 @@ export function posEcfToLatLng(ecfPosition, date) {
   const gmst = satellite.gstime(date);
   const eci = satellite.ecfToEci(ecfPosition, gmst);
   const geo = satellite.eciToGeodetic(eci, gmst);
-  return [radiansToDegrees(geo.latitude), radiansToDegrees(geo.longitude)];
+  return [satellite.radiansToDegrees(geo.latitude), satellite.radiansToDegrees(geo.longitude)];
 }
 
 /**
@@ -210,12 +218,10 @@ export function downsampleLatLngs(points, maxPoints) {
   if (!points || points.length <= maxPoints) return points.slice();
   const stride = Math.max(1, Math.floor((points.length - 1) / (maxPoints - 1)));
   const out = [];
-  for (let i = 0; i < points.length; i += stride) {
+  for (let i = 0; i < points.length - 1; i += stride) {
     out.push(points[i]);
+    if (out.length >= maxPoints - 1) break;
   }
-  const last = points[points.length - 1];
-  if (!out.length || out[out.length - 1] !== last) {
-    out.push(last);
-  }
+  out.push(points[points.length - 1]);
   return out;
 }

@@ -18,7 +18,11 @@ export const DEFAULT_GROUPS = {
   'glonass':    { name: 'GLONASS',    description: 'GLONASS global navigation constellation'  },
   'luch':       { name: 'Luch',       description: 'Luch relay communications'  },
   'starlink':   { name: 'Starlink',   description: 'Starlink broadband constellation (demo)'  },
-  'testsats':   { name: 'Test Sats',  description: 'Test satellites (demo)'  }
+  'testsats':   { name: 'Test Sats',  description: 'Test satellites (demo)'  },
+  'geo':        { name: 'GEO',        description: 'Geostationary Russian communications' },
+  'molniya-anomalous': { name: 'Molniya Anom', description: 'Molniya-type satellites (anomalous data)' },
+  'rusnet':     { name: 'RusNet',     description: 'Russian high-speed network constellation' },
+  'rassvet':    { name: 'Rassvet',    description: 'Rassvet satellite group' }
 };
 
 // Marker color per group (visible on the dark theme).
@@ -30,7 +34,11 @@ export const GROUP_COLORS = {
   'glonass':     '#BA68C8',
   'luch':        '#E0E0E0',
   'starlink':    '#7E57C2',
-  'testsats':    '#FFB74D'
+  'testsats':    '#FFB74D',
+  'geo':         '#FB8C00',
+  'molniya-anomalous': '#E53935',
+  'rusnet':      '#00ACC1',
+  'rassvet':     '#FF8A65'
 };
 
 // Time / simulation speed controls (1x realtime is the starting speed).
@@ -39,11 +47,14 @@ export const TIME_SPEED = { min: 1, max: 100, default: 1, step: 1 };
 // Rendering limits for performance (markers + polyline trails).
 export const RENDER = {
   MAX_VISIBLE_SATS: 250,       // hard cap on simultaneously rendered satellites
-  TRAIL_LENGTH:     40,        // legacy; trail now cadence/downsample controlled below
+  TRAIL_LENGTH:     40,        // legacy; trail is now cadence/downsample/time-controlled
   MARKER_SCALE:     0.75,      // marker size scaling factor
-  TRAIL_WIDTH:      2.5,       // trail polyline width in pixels
-  TRAIL_CADENCE_SEC: 0.5,      // trail position every N seconds (not every frame)
-  MAX_TRAIL_POINTS: 400        // max drawn trail points (trail is downsampled)
+  TRAIL_WIDTH:      3,         // trail polyline width in pixels
+  TRAIL_OPACITY:    0.85,      // trail polyline opacity
+  TRAIL_CADENCE_SEC: 1,        // append one historical point per N seconds of sim time
+  TRAIL_LENGTH_SEC: 3600,      // default trail length in seconds (1 hour)
+  MAX_TRAIL_POINTS: 400,       // drawn points after downsample (keeps the wave smooth)
+  MAX_TRAIL_HIST:   10000      // hard cap on historical buffer (~2.8h @ 1s cadence)
 };
 
 // Flat-map (Leaflet) view settings.
@@ -52,6 +63,6 @@ export const MAP = {
   START_LAT:  35,                 // initial map center lat
   START_LON:  90,                 // initial map center lon
   START_ZOOM: 3,                  // initial zoom
-  AUTO_CENTER: true,              // keep map centered on the visible-sat mean position
+  AUTO_CENTER: false,             // keep map centered on the visible-sat mean position
   AUTO_CENTER_SPEED: 0.15         // fraction of remaining distance to center per frame
 };
