@@ -565,6 +565,7 @@ class LeafletView {
     this._playSimStart = new Date(this._simTime);
     this.speed = 1;
     this.running = true;
+    this.trimAllTrails();
     this.updateUI();
   }
 
