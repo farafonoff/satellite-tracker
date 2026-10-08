@@ -1,0 +1,11 @@
+import * as S from './node_modules/satellite.mjs';
+const l1 = "1 32275U 07052A   26279.12970005 -.00000012  00000+0  00000+0 0  9995";
+const l2 = "2 32275  65.5087 312.1939 0005902 232.2872 127.7253  2.13103943147423";
+console.log("parse...");
+const sat = S.twoline2satrec(l1, l2);
+console.log("parse result:", JSON.stringify(sat));
+console.log("propagate...");
+const start = Date.now();
+const res = S.propagate(sat, new Date());
+console.log("propagate took:", Date.now() - start, "ms");
+console.log("pos:", res.position ? "OK" : "NONE");

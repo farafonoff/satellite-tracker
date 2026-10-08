@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RASSVET — Russian Satellite Tracker</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      :root {
+        --bg: #05070a;
+        --panel: rgba(15, 20, 28, 0.85);
+        --panel-border: rgba(79, 195, 247, 0.3);
+        --text: #e8f1ff;
+        --muted: #889bb3;
+        --accent: #4fc3f7;
+        --danger: #ff6b6b;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--bg);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: var(--text);
+      }
+      #map {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+      #rassvet-error {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(198, 40, 40, 0.95);
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-family: monospace;
+        font-size: 13px;
+        z-index: 100000;
+        max-width: 90vw;
+        display: none;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--danger);
+      }
+      #rassvet-error.show { display: block; }
+      #rassvet-error .close {
+        margin-left: 12px;
+        cursor: pointer;
+        color: #fff;
+        text-decoration: underline;
+      }
+      #rassvet-header {
+        position: absolute;
+        top: 12px;
+        left: 14px;
+        right: 14px;
+        display: flex;
+        gap: 22px;
+        align-items: center;
+        z-index: 1000;
+        pointer-events: none;
+      }
+      #rassvet-title {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: var(--accent);
+        text-shadow: 0 2px 12px rgba(79, 195, 247, 0.35);
+        pointer-events: auto;
+      }
+      #rassvet-status {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--muted);
+        background: rgba(10, 14, 20, 0.8);
+        padding: 4px 9px;
+        border-radius: 6px;
+        border: 1px solid var(--panel-border);
+        letter-spacing: 0.5px;
+        pointer-events: auto;
+        min-width: 88px;
+        text-align: center;
+      }
+      #rassvet-status.ready { color: #83dd79; border-color: rgba(131, 221, 121, 0.5); }
+      #rassvet-status.error { color: #ff6b6b; border-color: rgba(255, 107, 107, 0.5); }
+
+      #rassvet-left,
+      #rassvet-right {
+        position: absolute;
+        bottom: 14px;
+        width: 210px;
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid var(--panel-border);
+        border-radius: 10px;
+        padding: 10px 10px 10px 12px;
+        z-index: 1000;
+        pointer-events: auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      }
+      #rassvet-left { left: 14px; }
+      #rassvet-right { right: 14px; }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-thumb { background: rgba(79, 195, 247, 0.35); border-radius: 3px; }
+      .rassvet-panel-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+      }
+      .rassvet-label {
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .rassvet-label input[type="range"] { flex: 1; }
+      .rassvet-speed-val { color: var(--text); width: 30px; text-align: right; }
+      #rassvet-group-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      #rassvet-group-list label span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #rassvet-group-list label span::before {
+        content: '';
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="rassvet-error">
+      <span id="rassvet-error-msg"></span><span class="close" id="rassvet-error-close">[X]</span>
+    </div>
+
+    <div id="rassvet-header">
+      <div id="rassvet-title">RASSVET</div>
+      <div id="rassvet-status">LOADING</div>
+    </div>
+
+    <div id="map"></div>
+
+    <div id="rassvet-left">
+      <div class="rassvet-panel-title">Playback</div>
+      <label class="rassvet-label">
+        <button id="playback-btn" style="padding:2px 8px;">▶ Play</button>
+        <span class="rassvet-speed-val" id="speed-val">1x</span>
+      </label>
+      <input type="range" id="speed-range" min="1" max="100" value="1" step="1" />
+      <label class="rassvet-label">
+        Date
+        <span id="date-val">--</span>
+      </label>
+    </div>
+
+    <div id="rassvet-right">
+      <div class="rassvet-panel-title">Groups</div>
+      <div id="rassvet-group-list"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script type="module">
+      window.satellite = await import('./js/satellite.mjs?v=2');
+    </script>
+
+    <script type="module" src="js/config.js?v=2"></script>
+    <script type="module" src="js/utils.js?v=2"></script>
+    <script type="module" src="js/main.js?v=2"></script>
+
+    <script type="module">
+      const banner = document.getElementById('rassvet-error');
+      const msg = document.getElementById('rassvet-error-msg');
+      const close = document.getElementById('rassvet-error-close');
+      const seen = new Set();
+      window.rassvetShowError = function(text) {
+        const key = text.slice(0, 140);
+        if (seen.has(key)) return;
+        seen.add(key);
+        msg.textContent = text;
+        banner.classList.add('show');
+      };
+      close.addEventListener('click', () => banner.classList.remove('show'));
+      window.addEventListener('error', e => {
+        window.rassvetShowError('JS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+      });
+      window.addEventListener('unhandledrejection', e => {
+        window.rassvetShowError('PROMISE ERROR: ' + (e.reason?.message || e.reason));
+      });
+    </script>
+  </body>
+</html>

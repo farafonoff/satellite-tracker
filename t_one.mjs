@@ -1,0 +1,10 @@
+import fs from 'fs';
+import * as S from './node_modules/satellite.mjs';
+const lines = fs.readFileSync('data/tles/all.txt','utf8').trim().split(/\r?\n/).filter(l=>l.trim());
+console.log('total lines:', lines.length);
+const sat = S.twoline2satrec(lines[3].trim(), lines[4].trim());
+console.log('satnum:', sat.satnum, 'epoch:', sat.epochyr, sat.epochdays, 'ecc:', sat.ecco);
+const res = S.propagate(sat, new Date());
+console.log('prop ok, position present:', !!res.position);
+const cart = S.eciToGeodetic(res.position, S.gstime(new Date()));
+console.log('alt:', cart.height);

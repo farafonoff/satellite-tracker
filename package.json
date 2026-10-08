@@ -1,0 +1,13 @@
+{
+  "name": "satellitetracker",
+  "version": "1.0.0",
+  "description": "A dark-themed, single-page, browser-based Earth-orbit tracker for Russian (and demo) satellites, built on **Cesium 1.119.0 (UMD)** and **satellite.js v3.0.1** (SGP4 propagation). No build step — drop it on any HTTP server and open it.",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

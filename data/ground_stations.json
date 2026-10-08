@@ -1,0 +1,86 @@
+{
+  "description": "Russian satellite ground station network (telemetry/command/coverage)",
+  "generatedAt": "2026-10-07T03:50:00Z",
+  "stations": [
+    {
+      "id": "BAIKONUR",
+      "name": "Baikonur Cosmodrome GS",
+      "country": "Kazakhstan",
+      "latitude": 45.965,
+      "longitude": 63.305,
+      "elevationM": 90
+    },
+    {
+      "id": "PLESSESK",
+      "name": "Plesetsk Cosmodrome GS",
+      "country": "Russia",
+      "latitude": 62.917,
+      "longitude": 40.577,
+      "elevationM": 130
+    },
+    {
+      "id": "KRAMATORSK",
+      "name": "Kramatorsk Space Center GS",
+      "country": "Russia",
+      "latitude": 48.717,
+      "longitude": 37.567,
+      "elevationM": 150
+    },
+    {
+      "id": "KRASNOYARSK",
+      "name": "Krasnoyarsk Deep Space GS",
+      "country": "Russia",
+      "latitude": 56.167,
+      "longitude": 92.833,
+      "elevationM": 320
+    },
+    {
+      "id": "URUP",
+      "name": "Urup Island GS",
+      "country": "Russia",
+      "latitude": 49.417,
+      "longitude": 155.917,
+      "elevationM": 120
+    },
+    {
+      "id": "SEVERNY",
+      "name": "Severny Island GS",
+      "country": "Russia",
+      "latitude": 77.583,
+      "longitude": 103.317,
+      "elevationM": 50
+    },
+    {
+      "id": "MISHKIN",
+      "name": "Mishkin Satellite GS",
+      "country": "Russia",
+      "latitude": 56.083,
+      "longitude": 37.417,
+      "elevationM": 180
+    },
+    {
+      "id": "STRELKOVO",
+      "name": "Strelkovo Satellite GS",
+      "country": "Russia",
+      "latitude": 54.717,
+      "longitude": 38.833,
+      "elevationM": 160
+    },
+    {
+      "id": "KUNDUR",
+      "name": "Kundur GS (LEO/GLONASS)",
+      "country": "Russia",
+      "latitude": 51.583,
+      "longitude": 136.917,
+      "elevationM": 100
+    },
+    {
+      "id": "YEVPATORIA",
+      "name": "Yevpatoria GS (Deep Space)",
+      "country": "Crimea",
+      "latitude": 44.717,
+      "longitude": 33.367,
+      "elevationM": 110
+    }
+  ]
+}
